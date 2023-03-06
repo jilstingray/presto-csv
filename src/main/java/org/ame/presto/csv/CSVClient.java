@@ -55,27 +55,12 @@ public class CSVClient
         this.config = config;
         this.protocol = config.getProtocol().toLowerCase(Locale.ENGLISH);
         this.sftpSession = (SFTPSession) getSession();
-        JsonCodec<CSVTableDescription> codec = JsonCodec.jsonCodec(CSVTableDescription.class);
-        try {
-            if (ProtocolType.FILE.toString().equals(protocol)) {
-                CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, null);
-                this.tableDescriptions = supplier.get();
-            }
-            else if (sftpSession != null) {
-                CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, sftpSession);
-                this.tableDescriptions = supplier.get();
-            }
-            else {
-                throw new RuntimeException("Unsupported protocol: " + protocol);
-            }
-        }
-        catch (RuntimeException e) {
-            throw new RuntimeException(e);
-        }
+        getDescriptions();
     }
 
     public List<String> getSchemaNames()
     {
+        getDescriptions();
         List<String> schemas = new ArrayList<>();
         for (SchemaTableName schemaTableName : tableDescriptions.keySet()) {
             if (!schemas.contains(schemaTableName.getSchemaName())) {
@@ -88,6 +73,7 @@ public class CSVClient
     public List<String> getTableNames(String schemaName)
     {
         requireNonNull(schemaName, "schemaName is null");
+        getDescriptions();
         List<String> tables = new ArrayList<>();
         for (SchemaTableName schemaTableName : tableDescriptions.keySet()) {
             if (schemaTableName.getSchemaName().equals(schemaName)) {
@@ -101,6 +87,7 @@ public class CSVClient
     {
         requireNonNull(schemaName, "schemaName is null");
         requireNonNull(tableName, "tableName is null");
+        getDescriptions();
         SchemaTableName schemaTableName = new SchemaTableName(schemaName, tableName);
         CSVTableDescription tableDescription = tableDescriptions.get(schemaTableName);
         List<List<Object>> values = readAllValues(schemaName, tableName, tableDescription);
@@ -161,6 +148,27 @@ public class CSVClient
             return values;
         }
         catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void getDescriptions()
+    {
+        JsonCodec<CSVTableDescription> codec = JsonCodec.jsonCodec(CSVTableDescription.class);
+        try {
+            if (ProtocolType.FILE.toString().equals(protocol)) {
+                CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, null);
+                this.tableDescriptions = supplier.get();
+            }
+            else if (sftpSession != null) {
+                CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, sftpSession);
+                this.tableDescriptions = supplier.get();
+            }
+            else {
+                throw new RuntimeException("Unsupported protocol: " + protocol);
+            }
+        }
+        catch (RuntimeException e) {
             throw new RuntimeException(e);
         }
     }
