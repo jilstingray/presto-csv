@@ -11,37 +11,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv.protocol;
+package org.ame.presto.csv.session;
 
 import com.facebook.presto.spi.SchemaTableName;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.SftpException;
-import org.ame.presto.csv.CSVConnectorConfig;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class SFTPSession
         implements ISession
 {
     private static final Integer TIMEOUT = 10000;
+    private String base;
     private String host;
     private int port;
     private String username;
     private String password;
     private ChannelSftp channel;
 
-    public SFTPSession(CSVConnectorConfig config)
+    public SFTPSession(Map<String, String> sessionInfo)
             throws Exception
     {
-        this.host = config.getHost();
-        this.port = config.getPort();
-        this.username = config.getUsername();
-        this.password = config.getPassword();
+        this.base = sessionInfo.get("base");
+        if (base.endsWith("/") || base.endsWith("\\")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        if (!base.startsWith("/") || !base.startsWith("\\")) {
+            base = "/" + base;
+        }
+        this.host = sessionInfo.get("host");
+        this.port = Integer.parseInt(sessionInfo.get("port"));
+        this.username = sessionInfo.get("username");
+        this.password = sessionInfo.get("password");
         JSch jsch = new JSch();
         com.jcraft.jsch.Session session = jsch.getSession(username, host, port);
         session.setPassword(password);
@@ -52,19 +60,19 @@ public class SFTPSession
     }
 
     @Override
-    public InputStream getInputStream(String path)
+    public InputStream getInputStream(String schemaName, String tableName)
             throws SftpException
     {
-        InputStream inputStream = channel.get(path);
+        InputStream inputStream = channel.get(base + "/" + schemaName + "/" + tableName);
         return inputStream;
     }
 
     @Override
-    public List<String> getSchemas(String path)
+    public List<String> getSchemas()
             throws SftpException
     {
         List<String> schemas = new ArrayList<>();
-        List<ChannelSftp.LsEntry> entries = channel.ls(path);
+        List<ChannelSftp.LsEntry> entries = channel.ls(base);
         for (ChannelSftp.LsEntry entry : entries) {
             if (entry.getAttrs().isDir()) {
                 schemas.add(entry.getFilename());
@@ -74,13 +82,13 @@ public class SFTPSession
     }
 
     @Override
-    public List<String> getTables(String path, String schema, Pattern tablePattern)
+    public List<String> getTables(String schemaName, Pattern tableName)
             throws SftpException
     {
         List<String> tables = new ArrayList<>();
-        List<ChannelSftp.LsEntry> entries = channel.ls(path + "/" + schema);
+        List<ChannelSftp.LsEntry> entries = channel.ls(base + "/" + schemaName);
         for (ChannelSftp.LsEntry entry : entries) {
-            if (!entry.getAttrs().isDir() && tablePattern.matcher(entry.getFilename()).find()) {
+            if (!entry.getAttrs().isDir() && tableName.matcher(entry.getFilename()).find()) {
                 tables.add(entry.getFilename());
             }
         }
@@ -88,13 +96,13 @@ public class SFTPSession
     }
 
     @Override
-    public List<SchemaTableName> getSchemaTableNames(String path, String schema, Pattern tablePattern)
+    public List<SchemaTableName> getSchemaTableNames(String schemaName, Pattern tableName)
             throws Exception
     {
-        List<String> tables = getTables(path, schema, tablePattern);
+        List<String> tables = getTables(schemaName, tableName);
         List<SchemaTableName> schemaTableNames = new ArrayList<>();
         for (String table : tables) {
-            schemaTableNames.add(new SchemaTableName(schema, table));
+            schemaTableNames.add(new SchemaTableName(schemaName, table));
         }
         return schemaTableNames;
     }

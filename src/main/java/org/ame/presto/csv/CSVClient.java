@@ -18,22 +18,14 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.google.common.collect.ImmutableList;
 import org.ame.presto.csv.description.CSVTableDescription;
 import org.ame.presto.csv.description.CSVTableDescriptionSupplier;
-import org.ame.presto.csv.protocol.ISession;
-import org.ame.presto.csv.protocol.SFTPSession;
+import org.ame.presto.csv.session.ISession;
+import org.ame.presto.csv.session.SessionProvider;
 
 import javax.inject.Inject;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.nio.file.Path;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,25 +34,39 @@ import static java.util.Objects.requireNonNull;
 
 public class CSVClient
 {
-    private final CSVConnectorConfig config;
-    private final String protocol;
-    private final SFTPSession sftpSession;
-    Map<SchemaTableName, CSVTableDescription> tableDescriptions;
+    private final CSVConfig config;
+    private Map<SchemaTableName, CSVTableDescription> tableDescriptions;
 
     @Inject
-    public CSVClient(CSVConnectorConfig config, JsonCodec<Map<String, List<CSVTable>>> catalogCodec)
+    public CSVClient(CSVConfig config, JsonCodec<Map<String, List<CSVTable>>> catalogCodec)
     {
         requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
         this.config = config;
-        this.protocol = config.getProtocol().toLowerCase(Locale.ENGLISH);
-        this.sftpSession = (SFTPSession) getSession();
-        getDescriptions();
+        fetchDescriptions();
+    }
+
+    public String getDelimiter(SchemaTableName schemaTableName)
+    {
+        fetchDescriptions();
+        return tableDescriptions.get(schemaTableName).getDelimiter();
+    }
+
+    public Map<String, String> getSessionInfo()
+    {
+        Map<String, String> sessionInfo = new HashMap<>();
+        sessionInfo.put("base", config.getBase());
+        sessionInfo.put("protocol", config.getProtocol());
+        sessionInfo.put("host", config.getHost());
+        sessionInfo.put("port", config.getPort().toString());
+        sessionInfo.put("username", config.getUsername());
+        sessionInfo.put("password", config.getPassword());
+        return sessionInfo;
     }
 
     public List<String> getSchemaNames()
     {
-        getDescriptions();
+        fetchDescriptions();
         List<String> schemas = new ArrayList<>();
         for (SchemaTableName schemaTableName : tableDescriptions.keySet()) {
             if (!schemas.contains(schemaTableName.getSchemaName())) {
@@ -73,7 +79,7 @@ public class CSVClient
     public List<String> getTableNames(String schemaName)
     {
         requireNonNull(schemaName, "schemaName is null");
-        getDescriptions();
+        fetchDescriptions();
         List<String> tables = new ArrayList<>();
         for (SchemaTableName schemaTableName : tableDescriptions.keySet()) {
             if (schemaTableName.getSchemaName().equals(schemaName)) {
@@ -87,128 +93,30 @@ public class CSVClient
     {
         requireNonNull(schemaName, "schemaName is null");
         requireNonNull(tableName, "tableName is null");
-        getDescriptions();
+        fetchDescriptions();
         SchemaTableName schemaTableName = new SchemaTableName(schemaName, tableName);
         CSVTableDescription tableDescription = tableDescriptions.get(schemaTableName);
-        List<List<Object>> values = readAllValues(schemaName, tableName, tableDescription);
-        if (tableDescription == null || values.isEmpty()) {
+        if (tableDescription == null) {
             return Optional.empty();
         }
         List<CSVColumn> columns = new ArrayList<>();
         for (int i = 0; i < tableDescription.getColumns().size(); i++) {
             columns.add(new CSVColumn(tableDescription.getColumns().get(i).getName(), VARCHAR));
         }
-        return Optional.of(new CSVTable(tableName, columns, values));
+        return Optional.of(new CSVTable(tableName, columns));
     }
 
-    private List<List<Object>> readAllValues(String schemaName, String tableName, CSVTableDescription tableDescription)
-    {
-        if (tableDescription == null) {
-            return ImmutableList.of();
-        }
-        try {
-            InputStream inputStream = getInputStream(schemaName, tableName);
-            List<List<Object>> values = new ArrayList<>();
-            try {
-                BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(inputStream));
-                while (true) {
-                    String line = reader.readLine();
-                    if (line == null) {
-                        break;
-                    }
-                    String[] fields = line.split(tableDescription.getDelimiter());
-                    List<Object> row = new ArrayList<>();
-                    for (String field : fields) {
-                        if (field.matches("^-?\\d+$")) {
-                            row.add(Long.parseLong(field));
-                        }
-                        else if (field.matches("^-?\\d+\\.\\d+$")) {
-                            row.add(Double.parseDouble(field));
-                        }
-                        else if (field.matches("^-?\\d+\\.\\d+E\\d+$")) {
-                            row.add(new BigDecimal(field));
-                        }
-                        else if (field.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
-                            row.add(new SimpleDateFormat("yyyy-MM-dd").parse(field));
-                        }
-                        else if (field.matches("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$")) {
-                            row.add(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(field));
-                        }
-                        else {
-                            row.add(field);
-                        }
-                    }
-                    values.add(row);
-                }
-            }
-            catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-            inputStream.close();
-            return values;
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void getDescriptions()
+    private void fetchDescriptions()
     {
         JsonCodec<CSVTableDescription> codec = JsonCodec.jsonCodec(CSVTableDescription.class);
         try {
-            if (ProtocolType.FILE.toString().equals(protocol)) {
-                CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, null);
-                this.tableDescriptions = supplier.get();
-            }
-            else if (sftpSession != null) {
-                CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, sftpSession);
-                this.tableDescriptions = supplier.get();
-            }
-            else {
-                throw new RuntimeException("Unsupported protocol: " + protocol);
-            }
-        }
-        catch (RuntimeException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private InputStream getInputStream(String schemaName, String tableName)
-    {
-        String path = config.getBase();
-        if (!path.startsWith("/")) {
-            path = "/" + path;
-        }
-        if (path.endsWith("/")) {
-            path = path.substring(0, path.length() - 1);
-        }
-        try {
-            if (ProtocolType.FILE.toString().equals(protocol)) {
-                Path filePath = new File(path).toPath().resolve(schemaName).resolve(tableName);
-                return filePath.toUri().toURL().openStream();
-            }
-            else if (sftpSession != null) {
-                return sftpSession.getInputStream(path + "/" + schemaName + "/" + tableName);
-            }
-            else {
-                throw new RuntimeException("Unsupported protocol: " + protocol);
-            }
+            ISession session = new SessionProvider(getSessionInfo()).getSession();
+            CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, session);
+            this.tableDescriptions = supplier.get();
+            session.close();
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private ISession getSession()
-    {
-        if (ProtocolType.SFTP.toString().equals(this.protocol)) {
-            try {
-                return new SFTPSession(config);
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return null;
     }
 }

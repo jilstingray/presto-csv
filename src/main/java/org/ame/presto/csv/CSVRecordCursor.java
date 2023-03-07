@@ -19,9 +19,14 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
+import org.ame.presto.csv.session.ISession;
+import org.ame.presto.csv.session.SessionProvider;
 
+import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Scanner;
 
 import static com.facebook.presto.common.type.BigintType.BIGINT;
 import static com.facebook.presto.common.type.BooleanType.BOOLEAN;
@@ -37,24 +42,21 @@ public class CSVRecordCursor
     private final List<CSVColumnHandle> columnHandles;
     private final Long totalBytes;
     private List<String> fields;
-    private final List<List<Object>> dataValues;
-    private Integer currentIndex;
+    private final String delimiter;
+    private final ISession session;
+    private final InputStream inputStream;
+    private Scanner scanner;
+    private String currentLine;
 
-    public CSVRecordCursor(List<CSVColumnHandle> columnHandles, List<List<Object>> dataValues)
+    public CSVRecordCursor(List<CSVColumnHandle> columnHandles, CSVSplit split)
+            throws Exception
     {
-        requireNonNull(columnHandles, "columnHandles is null");
-        requireNonNull(dataValues, "dataValues is null");
-
-        this.columnHandles = ImmutableList.copyOf(columnHandles);
-        this.dataValues = ImmutableList.copyOf(dataValues);
-        long inputLength = 0;
-        for (List<Object> objList : dataValues) {
-            for (Object obj : objList) {
-                inputLength += String.valueOf(obj).length();
-            }
-        }
-        totalBytes = inputLength;
-        this.currentIndex = 0;
+        this.columnHandles = ImmutableList.copyOf(requireNonNull(columnHandles, "columnHandles is null"));
+        requireNonNull(split, "split is null");
+        this.session = new SessionProvider(split.getSessionInfo()).getSession();
+        inputStream = session.getInputStream(split.getSchemaName(), split.getTableName());
+        totalBytes = (long) inputStream.available();
+        this.delimiter = split.getDelimiter();
     }
 
     @Override
@@ -78,24 +80,23 @@ public class CSVRecordCursor
     @Override
     public boolean advanceNextPosition()
     {
-        List<Object> currentVals = null;
-        // skip empty rows
-        while (currentVals == null || currentVals.size() == 0) {
-            if (currentIndex == dataValues.size()) {
-                return false;
+        // TODO: use scanner.nextLine() instead of reading all lines at once
+        if (scanner == null) {
+            try {
+                scanner = new Scanner(inputStream);
             }
-            currentVals = dataValues.get(currentIndex++);
-        }
-        // populate incomplete columns with null
-        String[] allFields = new String[columnHandles.size()];
-        for (int i = 0; i < columnHandles.size(); i++) {
-            int ordinalPosition = columnHandles.get(i).getOrdinalPosition();
-            if (currentVals.size() > ordinalPosition) {
-                allFields[i] = String.valueOf(currentVals.get(ordinalPosition));
+            catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
-        fields = Arrays.asList(allFields);
-        return true;
+        if (scanner.hasNextLine()) {
+            currentLine = scanner.nextLine();
+            if (!currentLine.isEmpty()) {
+                fields = Arrays.asList(currentLine.split(delimiter));
+                Collections.replaceAll(fields, "", null);
+            }
+        }
+        return currentLine != null;
     }
 
     @Override
@@ -142,6 +143,14 @@ public class CSVRecordCursor
     @Override
     public void close()
     {
+        try {
+            this.scanner.close();
+            this.inputStream.close();
+            this.session.close();
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void checkFieldType(int field, Type expected)

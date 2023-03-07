@@ -51,12 +51,10 @@ public class CSVModule
         binder.bind(CSVRecordSetProvider.class).in(Scopes.SINGLETON);
         binder.bind(CSVHandleResolver.class).in(Scopes.SINGLETON);
 
-        configBinder(binder).bindConfig(CSVConnectorConfig.class);
+        configBinder(binder).bindConfig(CSVConfig.class);
 
         jsonBinder(binder).addDeserializerBinding(Type.class).to(TypeDeserializer.class);
         jsonCodecBinder(binder).bindMapJsonCodec(String.class, listJsonCodec(CSVTable.class));
-//        jsonCodecBinder(binder).bindMapJsonCodec(String.class, listJsonCodec(CSVColumnDescription.class));
-//        jsonCodecBinder(binder).bindMapJsonCodec(String.class, listJsonCodec(CSVTableDescription.class));
     }
 
     public static final class TypeDeserializer

@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv.protocol;
+package org.ame.presto.csv.session;
 
 import com.facebook.presto.spi.SchemaTableName;
 
@@ -21,16 +21,16 @@ import java.util.regex.Pattern;
 
 public interface ISession
 {
-    InputStream getInputStream(String path)
+    InputStream getInputStream(String schemaName, String tableName)
             throws Exception;
 
-    List<String> getSchemas(String path)
+    List<String> getSchemas()
             throws Exception;
 
-    List<String> getTables(String path, String schema, Pattern tablePattern)
+    List<String> getTables(String schemaName, Pattern tableName)
             throws Exception;
 
-    List<SchemaTableName> getSchemaTableNames(String path, String schema, Pattern tablePattern)
+    List<SchemaTableName> getSchemaTableNames(String schemaName, Pattern tableName)
             throws Exception;
 
     void close()

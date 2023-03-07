@@ -31,12 +31,12 @@ import java.util.Optional;
 public class CSVSplitManager
         implements ConnectorSplitManager
 {
-    private final CSVClient csvClient;
+    private final CSVClient client;
 
     @Inject
-    public CSVSplitManager(CSVClient csvClient)
+    public CSVSplitManager(CSVClient client)
     {
-        this.csvClient = csvClient;
+        this.client = client;
     }
 
     @Override
@@ -47,7 +47,7 @@ public class CSVSplitManager
             SplitSchedulingContext splitSchedulingContext)
     {
         CSVTableHandle tableHandle = ((CSVTableLayoutHandle) layout).getTableHandle();
-        Optional<CSVTable> table = csvClient.getTable(tableHandle.getSchemaName(), tableHandle.getTableName());
+        Optional<CSVTable> table = client.getTable(tableHandle.getSchemaName(), tableHandle.getTableName());
 
         // this can happen if table is removed during a query
         if (!table.isPresent()) {
@@ -55,7 +55,7 @@ public class CSVSplitManager
         }
 
         List<ConnectorSplit> splits = new ArrayList<>();
-        splits.add(new CSVSplit(tableHandle.getSchemaName(), tableHandle.getTableName(), table.get().getValues()));
+        splits.add(new CSVSplit(tableHandle.getSchemaName(), tableHandle.getTableName(), client.getDelimiter(tableHandle.getSchemaTableName()), client.getSessionInfo()));
         Collections.shuffle(splits);
         return new FixedSplitSource(splits);
     }

@@ -27,12 +27,12 @@ public class CSVRecordSet
 {
     private final List<CSVColumnHandle> columnHandles;
     private final List<Type> columnTypes;
-    private final List<List<Object>> values;
+    private final CSVSplit split;
 
-    public CSVRecordSet(CSVSplit excelSplit, List<CSVColumnHandle> columnHandles)
+    public CSVRecordSet(CSVSplit split, List<CSVColumnHandle> columnHandles)
     {
         this.columnHandles = requireNonNull(columnHandles, "columnHandles is null");
-        this.values = excelSplit.getValues();
+        this.split = requireNonNull(split, "split is null");
         this.columnTypes = columnHandles.stream().map(CSVColumnHandle::getColumnType).collect(Collectors.toList());
     }
 
@@ -45,6 +45,11 @@ public class CSVRecordSet
     @Override
     public RecordCursor cursor()
     {
-        return new CSVRecordCursor(columnHandles, values);
+        try {
+            return new CSVRecordCursor(columnHandles, split);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

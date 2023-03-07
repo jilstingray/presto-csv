@@ -32,8 +32,8 @@ public class CSVRecordSetProvider
     public RecordSet getRecordSet(ConnectorTransactionHandle transactionHandle, ConnectorSession session, ConnectorSplit split, List<? extends ColumnHandle> columns)
     {
         requireNonNull(split, "split is null");
-        CSVSplit excelSplit = (CSVSplit) split;
+        CSVSplit csvSplit = (CSVSplit) split;
         List<CSVColumnHandle> handles = columns.stream().map(c -> (CSVColumnHandle) c).collect(Collectors.toList());
-        return new CSVRecordSet(excelSplit, handles);
+        return new CSVRecordSet(csvSplit, handles);
     }
 }

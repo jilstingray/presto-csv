@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.facebook.presto.spi.schedule.NodeSelectionStrategy.NO_PREFERENCE;
 import static java.util.Objects.requireNonNull;
@@ -32,18 +33,21 @@ public class CSVSplit
 {
     private final String schemaName;
     private final String tableName;
-    private final List<List<Object>> values;
+    private final String delimiter;
+    private final Map<String, String> sessionInfo;
     private final List<HostAddress> addresses;
 
     @JsonCreator
     public CSVSplit(
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
-            @JsonProperty("values") List<List<Object>> values)
+            @JsonProperty("delimiter") String delimiter,
+            @JsonProperty("sessionProvider") Map<String, String> sessionInfo)
     {
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
-        this.values = requireNonNull(values, "values is null");
+        this.delimiter = requireNonNull(delimiter, "delimiter is null");
+        this.sessionInfo = requireNonNull(sessionInfo, "sessionInfo is null");
         this.addresses = ImmutableList.of();
     }
 
@@ -60,9 +64,15 @@ public class CSVSplit
     }
 
     @JsonProperty
-    public List<List<Object>> getValues()
+    public String getDelimiter()
     {
-        return values;
+        return delimiter;
+    }
+
+    @JsonProperty
+    public Map<String, String> getSessionInfo()
+    {
+        return sessionInfo;
     }
 
     @Override
@@ -83,7 +93,8 @@ public class CSVSplit
         return ImmutableMap.builder()
                 .put("schemaName", schemaName)
                 .put("tableName", tableName)
-                .put("values", values)
+                .put("delimiter", delimiter)
+                .put("sessionInfo", sessionInfo)
                 .build();
     }
 }

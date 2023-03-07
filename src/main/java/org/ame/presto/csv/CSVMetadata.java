@@ -44,7 +44,7 @@ public class CSVMetadata
     private final CSVClient csvClient;
 
     @Inject
-    public CSVMetadata(CSVClient client, CSVConnectorConfig config)
+    public CSVMetadata(CSVClient client, CSVConfig config)
     {
         this.csvClient = client;
     }

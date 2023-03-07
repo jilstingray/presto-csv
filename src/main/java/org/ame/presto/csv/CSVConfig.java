@@ -15,7 +15,7 @@ package org.ame.presto.csv;
 
 import com.facebook.airlift.configuration.Config;
 
-public class CSVConnectorConfig
+public class CSVConfig
 {
     private String protocol;
     private String base;
@@ -61,49 +61,49 @@ public class CSVConnectorConfig
     }
 
     @Config("csv.protocol")
-    public CSVConnectorConfig setProtocol(String protocol)
+    public CSVConfig setProtocol(String protocol)
     {
         this.protocol = protocol;
         return this;
     }
 
     @Config("csv.base")
-    public CSVConnectorConfig setBase(String base)
+    public CSVConfig setBase(String base)
     {
         this.base = checkPath(base);
         return this;
     }
 
     @Config("csv.table-description-dir")
-    public CSVConnectorConfig setTableDescriptionDir(String tableDescriptionDir)
+    public CSVConfig setTableDescriptionDir(String tableDescriptionDir)
     {
         this.tableDescriptionDir = checkPath(tableDescriptionDir);
         return this;
     }
 
     @Config("csv.username")
-    public CSVConnectorConfig setUsername(String username)
+    public CSVConfig setUsername(String username)
     {
         this.username = username;
         return this;
     }
 
     @Config("csv.password")
-    public CSVConnectorConfig setPassword(String password)
+    public CSVConfig setPassword(String password)
     {
         this.password = password;
         return this;
     }
 
     @Config("csv.host")
-    public CSVConnectorConfig setHost(String host)
+    public CSVConfig setHost(String host)
     {
         this.host = host;
         return this;
     }
 
     @Config("csv.port")
-    public CSVConnectorConfig setPort(Integer port)
+    public CSVConfig setPort(Integer port)
     {
         this.port = port;
         return this;
