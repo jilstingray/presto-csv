@@ -22,11 +22,11 @@ import io.airlift.slice.Slices;
 import org.ame.presto.csv.session.ISession;
 import org.ame.presto.csv.session.SessionProvider;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Scanner;
 
 import static com.facebook.presto.common.type.BigintType.BIGINT;
 import static com.facebook.presto.common.type.BooleanType.BOOLEAN;
@@ -45,7 +45,7 @@ public class CSVRecordCursor
     private final String delimiter;
     private final ISession session;
     private final InputStream inputStream;
-    private Scanner scanner;
+    private BufferedReader reader;
     private String currentLine;
 
     public CSVRecordCursor(List<CSVColumnHandle> columnHandles, CSVSplit split)
@@ -81,20 +81,25 @@ public class CSVRecordCursor
     public boolean advanceNextPosition()
     {
         // TODO: use scanner.nextLine() instead of reading all lines at once
-        if (scanner == null) {
+        if (reader == null) {
             try {
-                scanner = new Scanner(inputStream);
+                reader = new BufferedReader(new java.io.InputStreamReader(inputStream));
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-        if (scanner.hasNextLine()) {
-            currentLine = scanner.nextLine();
-            if (!currentLine.isEmpty()) {
-                fields = Arrays.asList(currentLine.split(delimiter));
-                Collections.replaceAll(fields, "", null);
+        try {
+            currentLine = reader.readLine();
+            if (currentLine != null) {
+                if (!currentLine.isEmpty()) {
+                    fields = Arrays.asList(currentLine.split(delimiter));
+                    Collections.replaceAll(fields, "", null);
+                }
             }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
         return currentLine != null;
     }
@@ -144,7 +149,7 @@ public class CSVRecordCursor
     public void close()
     {
         try {
-            this.scanner.close();
+            this.reader.close();
             this.inputStream.close();
             this.session.close();
         }
