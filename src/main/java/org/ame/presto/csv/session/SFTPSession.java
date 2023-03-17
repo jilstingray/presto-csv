@@ -16,7 +16,7 @@ package org.ame.presto.csv.session;
 import com.facebook.presto.spi.SchemaTableName;
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 import com.jcraft.jsch.SftpException;
 
 import java.io.InputStream;
@@ -34,6 +34,7 @@ public class SFTPSession
     private int port;
     private String username;
     private String password;
+    private Session session;
     private ChannelSftp channel;
 
     public SFTPSession(Map<String, String> sessionInfo)
@@ -50,13 +51,12 @@ public class SFTPSession
         this.port = Integer.parseInt(sessionInfo.get("port"));
         this.username = sessionInfo.get("username");
         this.password = sessionInfo.get("password");
-        JSch jsch = new JSch();
-        com.jcraft.jsch.Session session = jsch.getSession(username, host, port);
+        session = new JSch().getSession(username, host, port);
         session.setPassword(password);
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect(TIMEOUT);
         channel = (ChannelSftp) session.openChannel("sftp");
-        channel.connect();
+        channel.connect(TIMEOUT);
     }
 
     @Override
@@ -107,10 +107,14 @@ public class SFTPSession
         return schemaTableNames;
     }
 
+    @Override
     public void close()
-            throws JSchException
     {
-        channel.disconnect();
-        channel.getSession().disconnect();
+        if (channel != null) {
+            channel.disconnect();
+        }
+        if (session != null) {
+            session.disconnect();
+        }
     }
 }

@@ -84,7 +84,6 @@ public class LocalSession
 
     @Override
     public void close()
-            throws Exception
     {
     }
 

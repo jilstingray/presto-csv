@@ -33,6 +33,5 @@ public interface ISession
     List<SchemaTableName> getSchemaTableNames(String schemaName, Pattern tableName)
             throws Exception;
 
-    void close()
-            throws Exception;
+    void close();
 }

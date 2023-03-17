@@ -53,10 +53,10 @@ public class CSVRecordCursor
     {
         this.columnHandles = ImmutableList.copyOf(requireNonNull(columnHandles, "columnHandles is null"));
         requireNonNull(split, "split is null");
-        this.session = new SessionProvider(split.getSessionInfo()).getSession();
+        session = new SessionProvider(split.getSessionInfo()).getSession();
         inputStream = session.getInputStream(split.getSchemaName(), split.getTableName());
         totalBytes = (long) inputStream.available();
-        this.delimiter = split.getDelimiter();
+        delimiter = split.getDelimiter();
     }
 
     @Override
