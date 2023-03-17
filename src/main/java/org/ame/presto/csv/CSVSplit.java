@@ -42,7 +42,7 @@ public class CSVSplit
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("delimiter") String delimiter,
-            @JsonProperty("sessionProvider") Map<String, String> sessionInfo)
+            @JsonProperty("sessionInfo") Map<String, String> sessionInfo)
     {
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");

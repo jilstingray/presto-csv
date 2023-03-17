@@ -15,6 +15,7 @@ package org.ame.presto.csv;
 
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.RecordCursor;
+import com.facebook.presto.spi.SchemaTableName;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import io.airlift.slice.Slice;
@@ -27,6 +28,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.facebook.presto.common.type.BigintType.BIGINT;
 import static com.facebook.presto.common.type.BooleanType.BOOLEAN;
@@ -48,15 +50,14 @@ public class CSVRecordCursor
     private BufferedReader reader;
     private String currentLine;
 
-    public CSVRecordCursor(List<CSVColumnHandle> columnHandles, CSVSplit split)
+    public CSVRecordCursor(List<CSVColumnHandle> columnHandles, SchemaTableName schemaTableName, Map<String, String> sessionInfo, String delimiter)
             throws Exception
     {
         this.columnHandles = ImmutableList.copyOf(requireNonNull(columnHandles, "columnHandles is null"));
-        requireNonNull(split, "split is null");
-        session = new SessionProvider(split.getSessionInfo()).getSession();
-        inputStream = session.getInputStream(split.getSchemaName(), split.getTableName());
+        session = new SessionProvider(sessionInfo).getSession();
+        inputStream = session.getInputStream(schemaTableName.getSchemaName(), schemaTableName.getTableName());
         totalBytes = (long) inputStream.available();
-        delimiter = split.getDelimiter();
+        this.delimiter = delimiter;
     }
 
     @Override
@@ -80,7 +81,6 @@ public class CSVRecordCursor
     @Override
     public boolean advanceNextPosition()
     {
-        // TODO: use scanner.nextLine() instead of reading all lines at once
         if (reader == null) {
             try {
                 reader = new BufferedReader(new java.io.InputStreamReader(inputStream));

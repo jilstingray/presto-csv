@@ -16,8 +16,10 @@ package org.ame.presto.csv;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.RecordCursor;
 import com.facebook.presto.spi.RecordSet;
+import com.facebook.presto.spi.SchemaTableName;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
@@ -27,13 +29,18 @@ public class CSVRecordSet
 {
     private final List<CSVColumnHandle> columnHandles;
     private final List<Type> columnTypes;
-    private final CSVSplit split;
+    private final SchemaTableName schemaTableName;
+    private final Map<String, String> sessionInfo;
+    private final String delimiter;
 
     public CSVRecordSet(CSVSplit split, List<CSVColumnHandle> columnHandles)
     {
         this.columnHandles = requireNonNull(columnHandles, "columnHandles is null");
-        this.split = requireNonNull(split, "split is null");
         this.columnTypes = columnHandles.stream().map(CSVColumnHandle::getColumnType).collect(Collectors.toList());
+        requireNonNull(split, "split is null");
+        schemaTableName = new SchemaTableName(split.getSchemaName(), split.getTableName());
+        sessionInfo = split.getSessionInfo();
+        delimiter = split.getDelimiter();
     }
 
     @Override
@@ -46,7 +53,7 @@ public class CSVRecordSet
     public RecordCursor cursor()
     {
         try {
-            return new CSVRecordCursor(columnHandles, split);
+            return new CSVRecordCursor(columnHandles, schemaTableName, sessionInfo, delimiter);
         }
         catch (Exception e) {
             throw new RuntimeException(e);
