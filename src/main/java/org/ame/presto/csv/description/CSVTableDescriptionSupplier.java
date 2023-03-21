@@ -56,7 +56,7 @@ public class CSVTableDescriptionSupplier
             for (File file : listFiles(new File(config.getTableDescriptionDir()).toPath().toFile())) {
                 if (file.isFile() && file.getName().endsWith(".json")) {
                     CSVTableDescription table = codec.fromJson(readAllBytes(file.toPath()));
-                    List<SchemaTableName> schemaTableNames = session.getSchemaTableNames(table.getSchemaName(), table.getTableName());
+                    List<SchemaTableName> schemaTableNames = session.getSchemaTableNames(table.getSchemaName(), table.getTableName(), table.getwildcard());
                     for (SchemaTableName name : schemaTableNames) {
                         builder.put(name, table);
                     }

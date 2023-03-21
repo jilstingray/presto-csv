@@ -18,7 +18,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
-import java.util.regex.Pattern;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -28,7 +27,8 @@ import static java.util.Objects.requireNonNull;
 public class CSVTableDescription
 {
     private final String schemaName;
-    private final Pattern tableName;
+    private final String tableName;
+    private final boolean wildcard;
     private final String delimiter;
     private final List<CSVColumnDescription> columns;
 
@@ -36,13 +36,15 @@ public class CSVTableDescription
     public CSVTableDescription(
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
+            @JsonProperty("wildcard") boolean wildcard,
             @JsonProperty("delimiter") String delimiter,
             @JsonProperty("columns") List<CSVColumnDescription> columns)
 
     {
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         checkArgument(!isNullOrEmpty(tableName), "tableName is null or is empty");
-        this.tableName = Pattern.compile(tableName);
+        this.tableName = tableName;
+        this.wildcard = !isNullOrEmpty(String.valueOf(wildcard)) && wildcard;
         this.delimiter = requireNonNull(delimiter, "delimiter is null");
         this.columns = ImmutableList.copyOf(requireNonNull(columns, "columns is null"));
     }
@@ -54,9 +56,15 @@ public class CSVTableDescription
     }
 
     @JsonProperty
-    public Pattern getTableName()
+    public String getTableName()
     {
         return tableName;
+    }
+
+    @JsonProperty
+    public boolean getwildcard()
+    {
+        return wildcard;
     }
 
     @JsonProperty
@@ -75,7 +83,9 @@ public class CSVTableDescription
     public String toString()
     {
         return toStringHelper(this)
+                .add("schemaName", schemaName)
                 .add("tableName", tableName)
+                .add("wildcard", wildcard)
                 .add("delimiter", delimiter)
                 .add("columns", columns)
                 .toString();

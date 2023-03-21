@@ -70,14 +70,14 @@ public class CSVConfig
     @Config("csv.base")
     public CSVConfig setBase(String base)
     {
-        this.base = checkPath(base);
+        this.base = base;
         return this;
     }
 
     @Config("csv.table-description-dir")
     public CSVConfig setTableDescriptionDir(String tableDescriptionDir)
     {
-        this.tableDescriptionDir = checkPath(tableDescriptionDir);
+        this.tableDescriptionDir = tableDescriptionDir;
         return this;
     }
 
@@ -107,16 +107,5 @@ public class CSVConfig
     {
         this.port = port;
         return this;
-    }
-
-    private String checkPath(String path)
-    {
-        if (!path.startsWith("/")) {
-            return "/" + path;
-        }
-        if (path.endsWith("/")) {
-            return path.substring(0, path.length() - 1);
-        }
-        return path;
     }
 }

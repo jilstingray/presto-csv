@@ -17,7 +17,6 @@ import com.facebook.presto.spi.SchemaTableName;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public interface ISession
 {
@@ -27,10 +26,7 @@ public interface ISession
     List<String> getSchemas()
             throws Exception;
 
-    List<String> getTables(String schemaName, Pattern tableName)
-            throws Exception;
-
-    List<SchemaTableName> getSchemaTableNames(String schemaName, Pattern tableName)
+    List<SchemaTableName> getSchemaTableNames(String schemaName, String tableName, boolean wildcard)
             throws Exception;
 
     void close();

@@ -82,25 +82,17 @@ public class SFTPSession
     }
 
     @Override
-    public List<String> getTables(String schemaName, Pattern tableName)
+    public List<SchemaTableName> getSchemaTableNames(String schemaName, String tableName, boolean wildcard)
             throws SftpException
     {
-        List<String> tables = new ArrayList<>();
-        List<ChannelSftp.LsEntry> entries = channel.ls(base + "/" + schemaName);
-        for (ChannelSftp.LsEntry entry : entries) {
-            if (!entry.getAttrs().isDir() && tableName.matcher(entry.getFilename()).find()) {
-                tables.add(entry.getFilename());
-            }
-        }
-        return tables;
-    }
-
-    @Override
-    public List<SchemaTableName> getSchemaTableNames(String schemaName, Pattern tableName)
-            throws Exception
-    {
-        List<String> tables = getTables(schemaName, tableName);
         List<SchemaTableName> schemaTableNames = new ArrayList<>();
+        List<String> tables;
+        if (wildcard) {
+            tables = getTables(schemaName, Pattern.compile(tableName));
+        }
+        else {
+            tables = getTables(schemaName, tableName);
+        }
         for (String table : tables) {
             schemaTableNames.add(new SchemaTableName(schemaName, table));
         }
@@ -116,5 +108,32 @@ public class SFTPSession
         if (session != null) {
             session.disconnect();
         }
+    }
+
+    private List<String> getTables(String schemaName, Pattern tableName)
+            throws SftpException
+    {
+        List<String> tables = new ArrayList<>();
+        List<ChannelSftp.LsEntry> entries = channel.ls(base + "/" + schemaName);
+        for (ChannelSftp.LsEntry entry : entries) {
+            if (!entry.getAttrs().isDir() && tableName.matcher(entry.getFilename()).find()) {
+                tables.add(entry.getFilename());
+            }
+        }
+        return tables;
+    }
+
+    private List<String> getTables(String schemaName, String tableName)
+            throws SftpException
+    {
+        List<String> tables = new ArrayList<>();
+        List<ChannelSftp.LsEntry> entries = channel.ls(base + "/" + schemaName);
+        for (ChannelSftp.LsEntry entry : entries) {
+            if (!entry.getAttrs().isDir() && tableName.equals(entry.getFilename())) {
+                tables.add(entry.getFilename());
+                break;
+            }
+        }
+        return tables;
     }
 }

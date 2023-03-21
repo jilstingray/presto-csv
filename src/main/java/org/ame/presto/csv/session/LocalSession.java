@@ -60,22 +60,16 @@ public class LocalSession
     }
 
     @Override
-    public List<String> getTables(String schemaName, Pattern tableName)
+    public List<SchemaTableName> getSchemaTableNames(String schemaName, String tableName, boolean wildcard)
     {
-        List<String> tables = new ArrayList<>();
-        for (File file : listFiles(new File(base).toPath().resolve(schemaName).toFile())) {
-            if (file.isFile() && tableName.matcher(file.getName()).find()) {
-                tables.add(file.getName());
-            }
-        }
-        return tables;
-    }
-
-    @Override
-    public List<SchemaTableName> getSchemaTableNames(String schemaName, Pattern tableName)
-    {
-        List<String> tables = getTables(schemaName, tableName);
         List<SchemaTableName> schemaTableNames = new ArrayList<>();
+        List<String> tables;
+        if (wildcard) {
+            tables = getTables(schemaName, Pattern.compile(tableName));
+        }
+        else {
+            tables = getTables(schemaName, tableName);
+        }
         for (String table : tables) {
             schemaTableNames.add(new SchemaTableName(schemaName, table));
         }
@@ -85,6 +79,29 @@ public class LocalSession
     @Override
     public void close()
     {
+    }
+
+    private List<String> getTables(String schemaName, Pattern tableNamePattern)
+    {
+        List<String> tables = new ArrayList<>();
+        for (File file : listFiles(new File(base).toPath().resolve(schemaName).toFile())) {
+            if (file.isFile() && tableNamePattern.matcher(file.getName()).find()) {
+                tables.add(file.getName());
+            }
+        }
+        return tables;
+    }
+
+    private List<String> getTables(String schemaName, String tableName)
+    {
+        List<String> tables = new ArrayList<>();
+        for (File file : listFiles(new File(base).toPath().resolve(schemaName).toFile())) {
+            if (file.isFile() && tableName.equals(file.getName())) {
+                tables.add(file.getName());
+                break;
+            }
+        }
+        return tables;
     }
 
     private static List<File> listFiles(File dir)
