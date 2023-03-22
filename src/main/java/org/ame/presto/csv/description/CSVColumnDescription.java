@@ -13,8 +13,15 @@
  */
 package org.ame.presto.csv.description;
 
+import com.facebook.presto.common.type.BigintType;
+import com.facebook.presto.common.type.BooleanType;
+import com.facebook.presto.common.type.DoubleType;
+import com.facebook.presto.common.type.Type;
+import com.facebook.presto.common.type.VarcharType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.Locale;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -23,12 +30,32 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 public class CSVColumnDescription
 {
     private final String name;
+    private final Type type;
 
     @JsonCreator
-    public CSVColumnDescription(@JsonProperty("name") String name)
+    public CSVColumnDescription(
+            @JsonProperty("name") String name,
+            @JsonProperty("type") String type)
     {
         checkArgument(!isNullOrEmpty(name), "name is null or is empty");
         this.name = name;
+        if (isNullOrEmpty(type)) {
+            this.type = VarcharType.VARCHAR;
+            return;
+        }
+        switch (type.toUpperCase(Locale.ENGLISH)) {
+            case "BOOLEAN":
+                this.type = BooleanType.BOOLEAN;
+                break;
+            case "BIGINT":
+                this.type = BigintType.BIGINT;
+                break;
+            case "DOUBLE":
+                this.type = DoubleType.DOUBLE;
+                break;
+            default:
+                this.type = VarcharType.VARCHAR;
+        }
     }
 
     @JsonProperty
@@ -37,9 +64,18 @@ public class CSVColumnDescription
         return name;
     }
 
+    @JsonProperty
+    public Type getType()
+    {
+        return type;
+    }
+
     @Override
     public String toString()
     {
-        return toStringHelper(this).add("name", name).toString();
+        return toStringHelper(this)
+                .add("name", name)
+                .add("type", type)
+                .toString();
     }
 }

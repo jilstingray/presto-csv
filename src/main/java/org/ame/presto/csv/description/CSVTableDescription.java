@@ -28,8 +28,11 @@ public class CSVTableDescription
 {
     private final String schemaName;
     private final String tableName;
+    // If wildcard is true, tableName is a glob pattern. This option supports reading multiple files with similar names.
     private final boolean wildcard;
     private final String delimiter;
+    private final boolean hasHeader;
+    // Whether the file has a header or not, columns must be specified.
     private final List<CSVColumnDescription> columns;
 
     @JsonCreator
@@ -38,6 +41,7 @@ public class CSVTableDescription
             @JsonProperty("tableName") String tableName,
             @JsonProperty("wildcard") boolean wildcard,
             @JsonProperty("delimiter") String delimiter,
+            @JsonProperty("hasHeader") boolean hasHeader,
             @JsonProperty("columns") List<CSVColumnDescription> columns)
 
     {
@@ -45,7 +49,8 @@ public class CSVTableDescription
         checkArgument(!isNullOrEmpty(tableName), "tableName is null or is empty");
         this.tableName = tableName;
         this.wildcard = !isNullOrEmpty(String.valueOf(wildcard)) && wildcard;
-        this.delimiter = requireNonNull(delimiter, "delimiter is null");
+        this.delimiter = isNullOrEmpty(delimiter) ? "," : delimiter;
+        this.hasHeader = !isNullOrEmpty(String.valueOf(hasHeader)) && hasHeader;
         this.columns = ImmutableList.copyOf(requireNonNull(columns, "columns is null"));
     }
 
@@ -62,7 +67,7 @@ public class CSVTableDescription
     }
 
     @JsonProperty
-    public boolean getwildcard()
+    public boolean getWildcard()
     {
         return wildcard;
     }
@@ -71,6 +76,12 @@ public class CSVTableDescription
     public String getDelimiter()
     {
         return delimiter;
+    }
+
+    @JsonProperty
+    public boolean getHasHeader()
+    {
+        return hasHeader;
     }
 
     @JsonProperty
@@ -87,6 +98,7 @@ public class CSVTableDescription
                 .add("tableName", tableName)
                 .add("wildcard", wildcard)
                 .add("delimiter", delimiter)
+                .add("hasHeader", hasHeader)
                 .add("columns", columns)
                 .toString();
     }

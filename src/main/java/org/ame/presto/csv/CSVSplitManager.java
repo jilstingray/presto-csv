@@ -55,7 +55,12 @@ public class CSVSplitManager
         }
 
         List<ConnectorSplit> splits = new ArrayList<>();
-        splits.add(new CSVSplit(tableHandle.getSchemaName(), tableHandle.getTableName(), client.getDelimiter(tableHandle.getSchemaTableName()), client.getSessionInfo()));
+        splits.add(new CSVSplit(
+                tableHandle.getSchemaName(),
+                tableHandle.getTableName(),
+                client.getDelimiter(tableHandle.getSchemaTableName()),
+                client.getHasHeader(tableHandle.getSchemaTableName()),
+                client.getSessionInfo()));
         Collections.shuffle(splits);
         return new FixedSplitSource(splits);
     }

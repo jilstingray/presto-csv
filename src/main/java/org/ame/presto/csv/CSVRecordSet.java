@@ -32,6 +32,7 @@ public class CSVRecordSet
     private final SchemaTableName schemaTableName;
     private final Map<String, String> sessionInfo;
     private final String delimiter;
+    private final boolean hasHeader;
 
     public CSVRecordSet(CSVSplit split, List<CSVColumnHandle> columnHandles)
     {
@@ -41,6 +42,7 @@ public class CSVRecordSet
         schemaTableName = new SchemaTableName(split.getSchemaName(), split.getTableName());
         sessionInfo = split.getSessionInfo();
         delimiter = split.getDelimiter();
+        hasHeader = split.getHasHeader();
     }
 
     @Override
@@ -53,7 +55,7 @@ public class CSVRecordSet
     public RecordCursor cursor()
     {
         try {
-            return new CSVRecordCursor(columnHandles, schemaTableName, sessionInfo, delimiter);
+            return new CSVRecordCursor(columnHandles, schemaTableName, sessionInfo, delimiter, hasHeader);
         }
         catch (Exception e) {
             throw new RuntimeException(e);

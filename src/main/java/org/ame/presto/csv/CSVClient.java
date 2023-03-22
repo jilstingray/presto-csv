@@ -16,6 +16,7 @@ package org.ame.presto.csv;
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.presto.spi.SchemaTableName;
 import com.google.common.collect.ImmutableList;
+import org.ame.presto.csv.description.CSVColumnDescription;
 import org.ame.presto.csv.description.CSVTableDescription;
 import org.ame.presto.csv.description.CSVTableDescriptionSupplier;
 import org.ame.presto.csv.session.ISession;
@@ -29,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static com.facebook.presto.common.type.VarcharType.VARCHAR;
 import static java.util.Objects.requireNonNull;
 
 public class CSVClient
@@ -50,6 +50,12 @@ public class CSVClient
     {
         fetchDescriptions();
         return tableDescriptions.get(schemaTableName).getDelimiter();
+    }
+
+    public Boolean getHasHeader(SchemaTableName schemaTableName)
+    {
+        fetchDescriptions();
+        return tableDescriptions.get(schemaTableName).getHasHeader();
     }
 
     public Map<String, String> getSessionInfo()
@@ -93,15 +99,15 @@ public class CSVClient
     {
         requireNonNull(schemaName, "schemaName is null");
         requireNonNull(tableName, "tableName is null");
-        fetchDescriptions();
         SchemaTableName schemaTableName = new SchemaTableName(schemaName, tableName);
+        fetchDescriptions();
         CSVTableDescription tableDescription = tableDescriptions.get(schemaTableName);
         if (tableDescription == null) {
             return Optional.empty();
         }
         List<CSVColumn> columns = new ArrayList<>();
-        for (int i = 0; i < tableDescription.getColumns().size(); i++) {
-            columns.add(new CSVColumn(tableDescription.getColumns().get(i).getName(), VARCHAR));
+        for (CSVColumnDescription column : tableDescription.getColumns()) {
+            columns.add(new CSVColumn(column.getName(), column.getType()));
         }
         return Optional.of(new CSVTable(tableName, columns));
     }

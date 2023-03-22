@@ -34,6 +34,7 @@ public class CSVSplit
     private final String schemaName;
     private final String tableName;
     private final String delimiter;
+    private final boolean hasHeader;
     private final Map<String, String> sessionInfo;
     private final List<HostAddress> addresses;
 
@@ -42,11 +43,13 @@ public class CSVSplit
             @JsonProperty("schemaName") String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("delimiter") String delimiter,
+            @JsonProperty("hasHeader") boolean hasHeader,
             @JsonProperty("sessionInfo") Map<String, String> sessionInfo)
     {
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
         this.delimiter = requireNonNull(delimiter, "delimiter is null");
+        this.hasHeader = hasHeader;
         this.sessionInfo = requireNonNull(sessionInfo, "sessionInfo is null");
         this.addresses = ImmutableList.of();
     }
@@ -67,6 +70,12 @@ public class CSVSplit
     public String getDelimiter()
     {
         return delimiter;
+    }
+
+    @JsonProperty
+    public boolean getHasHeader()
+    {
+        return hasHeader;
     }
 
     @JsonProperty
@@ -94,6 +103,7 @@ public class CSVSplit
                 .put("schemaName", schemaName)
                 .put("tableName", tableName)
                 .put("delimiter", delimiter)
+                .put("hasHeader", hasHeader)
                 .put("sessionInfo", sessionInfo)
                 .build();
     }

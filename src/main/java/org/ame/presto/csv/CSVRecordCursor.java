@@ -42,22 +42,28 @@ public class CSVRecordCursor
         implements RecordCursor
 {
     private final List<CSVColumnHandle> columnHandles;
-    private final Long totalBytes;
+    private long totalBytes;
     private List<String> fields;
     private final String delimiter;
+    private final boolean hasHeader;
     private final ISession session;
     private final InputStream inputStream;
     private BufferedReader reader;
     private String currentLine;
 
-    public CSVRecordCursor(List<CSVColumnHandle> columnHandles, SchemaTableName schemaTableName, Map<String, String> sessionInfo, String delimiter)
+    public CSVRecordCursor(
+            List<CSVColumnHandle> columnHandles,
+            SchemaTableName schemaTableName,
+            Map<String, String> sessionInfo,
+            String delimiter,
+            boolean hasHeader)
             throws Exception
     {
         this.columnHandles = ImmutableList.copyOf(requireNonNull(columnHandles, "columnHandles is null"));
         session = new SessionProvider(sessionInfo).getSession();
         inputStream = session.getInputStream(schemaTableName.getSchemaName(), schemaTableName.getTableName());
-        totalBytes = (long) inputStream.available();
         this.delimiter = delimiter;
+        this.hasHeader = hasHeader;
     }
 
     @Override
@@ -84,6 +90,10 @@ public class CSVRecordCursor
         if (reader == null) {
             try {
                 reader = new BufferedReader(new java.io.InputStreamReader(inputStream));
+                // skip header if exists
+                if (hasHeader) {
+                    reader.readLine();
+                }
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
@@ -94,7 +104,11 @@ public class CSVRecordCursor
             if (currentLine != null) {
                 if (!currentLine.isEmpty()) {
                     fields = Arrays.asList(currentLine.split(delimiter));
+                    // replace empty or null values with null
                     Collections.replaceAll(fields, "", null);
+                    Collections.replaceAll(fields, "null", null);
+                    Collections.replaceAll(fields, "NULL", null);
+                    totalBytes += currentLine.getBytes().length;
                 }
             }
         }

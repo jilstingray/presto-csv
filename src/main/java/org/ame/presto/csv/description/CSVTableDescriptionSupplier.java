@@ -53,10 +53,11 @@ public class CSVTableDescriptionSupplier
     {
         ImmutableMap.Builder<SchemaTableName, CSVTableDescription> builder = ImmutableMap.builder();
         try {
+            // read description files
             for (File file : listFiles(new File(config.getTableDescriptionDir()).toPath().toFile())) {
                 if (file.isFile() && file.getName().endsWith(".json")) {
                     CSVTableDescription table = codec.fromJson(readAllBytes(file.toPath()));
-                    List<SchemaTableName> schemaTableNames = session.getSchemaTableNames(table.getSchemaName(), table.getTableName(), table.getwildcard());
+                    List<SchemaTableName> schemaTableNames = session.getSchemaTableNames(table.getSchemaName(), table.getTableName(), table.getWildcard());
                     for (SchemaTableName name : schemaTableNames) {
                         builder.put(name, table);
                     }
