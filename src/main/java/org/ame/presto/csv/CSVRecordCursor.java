@@ -22,8 +22,9 @@ import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import org.ame.presto.csv.session.ISession;
 import org.ame.presto.csv.session.SessionProvider;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
 
-import java.io.BufferedReader;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,11 +46,9 @@ public class CSVRecordCursor
     private long totalBytes;
     private List<String> fields;
     private final String delimiter;
-    private final boolean hasHeader;
     private final ISession session;
     private final InputStream inputStream;
-    private BufferedReader reader;
-    private String currentLine;
+    private LineIterator iterator;
 
     public CSVRecordCursor(
             List<CSVColumnHandle> columnHandles,
@@ -62,8 +61,12 @@ public class CSVRecordCursor
         this.columnHandles = ImmutableList.copyOf(requireNonNull(columnHandles, "columnHandles is null"));
         session = new SessionProvider(sessionInfo).getSession();
         inputStream = session.getInputStream(schemaTableName.getSchemaName(), schemaTableName.getTableName());
+        iterator = IOUtils.lineIterator(inputStream, "UTF-8");
         this.delimiter = delimiter;
-        this.hasHeader = hasHeader;
+        // skip header if exists
+        if (hasHeader && iterator.hasNext()) {
+            iterator.nextLine();
+        }
     }
 
     @Override
@@ -87,35 +90,21 @@ public class CSVRecordCursor
     @Override
     public boolean advanceNextPosition()
     {
-        if (reader == null) {
-            try {
-                reader = new BufferedReader(new java.io.InputStreamReader(inputStream));
-                // skip header if exists
-                if (hasHeader) {
-                    reader.readLine();
-                }
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        if (!iterator.hasNext()) {
+            return false;
         }
-        try {
-            currentLine = reader.readLine();
-            if (currentLine != null) {
-                if (!currentLine.isEmpty()) {
-                    fields = Arrays.asList(currentLine.split(delimiter));
-                    // replace empty or null values with null
-                    Collections.replaceAll(fields, "", null);
-                    Collections.replaceAll(fields, "null", null);
-                    Collections.replaceAll(fields, "NULL", null);
-                    totalBytes += currentLine.getBytes().length;
-                }
-            }
+        String currentLine = iterator.nextLine();
+        // skip empty lines
+        if (currentLine.isEmpty()) {
+            return true;
         }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return currentLine != null;
+        fields = Arrays.asList(currentLine.split(delimiter));
+        // replace empty or null values with null
+        Collections.replaceAll(fields, "", null);
+        Collections.replaceAll(fields, "null", null);
+        Collections.replaceAll(fields, "NULL", null);
+        totalBytes += currentLine.getBytes().length;
+        return true;
     }
 
     @Override
@@ -163,7 +152,7 @@ public class CSVRecordCursor
     public void close()
     {
         try {
-            this.reader.close();
+            this.iterator.close();
             this.inputStream.close();
             this.session.close();
         }
