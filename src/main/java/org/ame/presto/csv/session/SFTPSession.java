@@ -44,9 +44,6 @@ public class SFTPSession
         if (base.endsWith("/") || base.endsWith("\\")) {
             base = base.substring(0, base.length() - 1);
         }
-        if (!base.startsWith("/") || !base.startsWith("\\")) {
-            base = "/" + base;
-        }
         this.host = sessionInfo.get("host");
         this.port = Integer.parseInt(sessionInfo.get("port"));
         this.username = sessionInfo.get("username");
@@ -65,20 +62,6 @@ public class SFTPSession
     {
         InputStream inputStream = channel.get(base + "/" + schemaName + "/" + tableName);
         return inputStream;
-    }
-
-    @Override
-    public List<String> getSchemas()
-            throws SftpException
-    {
-        List<String> schemas = new ArrayList<>();
-        List<ChannelSftp.LsEntry> entries = channel.ls(base);
-        for (ChannelSftp.LsEntry entry : entries) {
-            if (entry.getAttrs().isDir()) {
-                schemas.add(entry.getFilename());
-            }
-        }
-        return schemas;
     }
 
     @Override

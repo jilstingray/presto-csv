@@ -98,7 +98,7 @@ public class CSVRecordCursor
         if (currentLine.isEmpty()) {
             return true;
         }
-        fields = Arrays.asList(currentLine.split(delimiter));
+        fields = Arrays.asList(currentLine.split(delimiter, -1));
         // replace empty or null values with null
         Collections.replaceAll(fields, "", null);
         Collections.replaceAll(fields, "null", null);

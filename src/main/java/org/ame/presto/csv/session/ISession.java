@@ -23,9 +23,6 @@ public interface ISession
     InputStream getInputStream(String schemaName, String tableName)
             throws Exception;
 
-    List<String> getSchemas()
-            throws Exception;
-
     List<SchemaTableName> getSchemaTableNames(String schemaName, String tableName, boolean wildcard)
             throws Exception;
 

@@ -35,9 +35,6 @@ public class LocalSession
         if (base.endsWith("/") || base.endsWith("\\")) {
             base = base.substring(0, base.length() - 1);
         }
-        if (!base.startsWith("/") || !base.startsWith("\\")) {
-            base = "/" + base;
-        }
     }
 
     @Override
@@ -45,18 +42,6 @@ public class LocalSession
             throws IOException
     {
         return new File(base + "/" + schemaName + "/" + tableName).toPath().toUri().toURL().openStream();
-    }
-
-    @Override
-    public List<String> getSchemas()
-    {
-        List<String> schemas = new ArrayList<>();
-        for (File file : listFiles(new File(base).toPath().toFile())) {
-            if (file.isDirectory()) {
-                schemas.add(file.getName());
-            }
-        }
-        return schemas;
     }
 
     @Override
