@@ -1,6 +1,6 @@
 # Presto CSV Connector
 
-This connector allows Presto to query data stored in comma-separated (not necessarily "comma") values files from local or SFTP storage.
+This connector allows Presto to query data stored in CSV files from local or SFTP storage.
 
 ## Compile
 
