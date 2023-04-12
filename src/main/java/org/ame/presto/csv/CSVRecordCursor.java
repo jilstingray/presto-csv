@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.facebook.presto.common.type.BigintType.BIGINT;
 import static com.facebook.presto.common.type.BooleanType.BOOLEAN;
@@ -43,12 +44,12 @@ public class CSVRecordCursor
         implements RecordCursor
 {
     private final List<CSVColumnHandle> columnHandles;
-    private long totalBytes;
-    private List<String> fields;
-    private final String delimiter;
+    private final String spliter;
     private final ISession session;
     private final InputStream inputStream;
-    private LineIterator iterator;
+    private final LineIterator iterator;
+    private long totalBytes;
+    private List<String> fields;
 
     public CSVRecordCursor(
             List<CSVColumnHandle> columnHandles,
@@ -62,7 +63,8 @@ public class CSVRecordCursor
         session = new SessionProvider(sessionInfo).getSession();
         inputStream = session.getInputStream(schemaTableName.getSchemaName(), schemaTableName.getTableName());
         iterator = IOUtils.lineIterator(inputStream, "UTF-8");
-        this.delimiter = delimiter;
+        // ignore characters between quotes
+        this.spliter = delimiter + "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
         // skip header if exists
         if (hasHeader && iterator.hasNext()) {
             iterator.nextLine();
@@ -98,7 +100,7 @@ public class CSVRecordCursor
         if (currentLine.isEmpty()) {
             return true;
         }
-        fields = Arrays.asList(currentLine.split(delimiter, -1));
+        fields = Arrays.asList(currentLine.split(spliter, -1));
         // replace empty or null values with null
         Collections.replaceAll(fields, "", null);
         Collections.replaceAll(fields, "null", null);
