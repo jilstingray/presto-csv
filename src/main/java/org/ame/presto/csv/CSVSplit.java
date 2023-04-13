@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.facebook.presto.spi.schedule.NodeSelectionStrategy.SOFT_AFFINITY;
 import static java.util.Objects.requireNonNull;
@@ -33,24 +32,15 @@ public class CSVSplit
 {
     private final String schemaName;
     private final String tableName;
-    private final String delimiter;
-    private final boolean hasHeader;
-    private final Map<String, String> sessionInfo;
     private final List<HostAddress> addresses;
 
     @JsonCreator
     public CSVSplit(
             @JsonProperty("schemaName") String schemaName,
-            @JsonProperty("tableName") String tableName,
-            @JsonProperty("delimiter") String delimiter,
-            @JsonProperty("hasHeader") boolean hasHeader,
-            @JsonProperty("sessionInfo") Map<String, String> sessionInfo)
+            @JsonProperty("tableName") String tableName)
     {
         this.schemaName = requireNonNull(schemaName, "schemaName is null");
         this.tableName = requireNonNull(tableName, "tableName is null");
-        this.delimiter = requireNonNull(delimiter, "delimiter is null");
-        this.hasHeader = hasHeader;
-        this.sessionInfo = requireNonNull(sessionInfo, "sessionInfo is null");
         this.addresses = ImmutableList.of();
     }
 
@@ -64,24 +54,6 @@ public class CSVSplit
     public String getTableName()
     {
         return tableName;
-    }
-
-    @JsonProperty
-    public String getDelimiter()
-    {
-        return delimiter;
-    }
-
-    @JsonProperty
-    public boolean getHasHeader()
-    {
-        return hasHeader;
-    }
-
-    @JsonProperty
-    public Map<String, String> getSessionInfo()
-    {
-        return sessionInfo;
     }
 
     @Override
@@ -102,9 +74,7 @@ public class CSVSplit
         return ImmutableMap.builder()
                 .put("schemaName", schemaName)
                 .put("tableName", tableName)
-                .put("delimiter", delimiter)
-                .put("hasHeader", hasHeader)
-                .put("sessionInfo", sessionInfo)
+                .put("addresses", addresses)
                 .build();
     }
 }

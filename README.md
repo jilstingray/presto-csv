@@ -19,40 +19,17 @@ Create a catalog properties file `etc/catalog/csv.properties`. If you want to re
 connector.name=csv
 csv.protocol=file
 csv.base=/path/to/dir
-csv.table-description-dir=/path/to/dir
+csv.splitter=,
+csv.suffix=csv
 ```
 
-`csv.base` sets the root directory. The schema name is the second level directory, and table name is the Excel file name without suffix.
+* `csv.base` sets the base directory. The schema name is the second level directory, and table name is the file name.
 
-`csv.table-description-dir` contains necessary table description JSON files.
+* `csv.splitter` sets the delimiter of the CSV file. The default value is `,`.
 
-```json
-{
-  "schemaName": "ip_port_list",
-  "tableName": "ip_port_list_1.csv",
-  "wildcard": false,
-  "delimiter": ",",
-  "hasHeader": false,
-  "columns": [
-    {
-      "name": "ip"
-    },
-    {
-      "name": "port",
-      "type": "BIGINT"
-    }
-  ]
-}
-```
+* `csv.suffix` sets the suffix of the CSV file. The default value is `csv`.
 
-| Field      | Description                                                                                                                            |
-|------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| schemaName | The schema (folder) name of tables (files).                                                                                            |
-| tableName  | The table (file) name.                                                                                                                 |
-| wildcard   | If wildcard is true, tableName is a glob pattern.</br>This option supports reading multiple files with similar names and same columns. |
-| delimiter  | The delimiter of the file (default ",").                                                                                               |
-| hasHeader  | If hasHeader is true, the first line of the file is the header.</br>Whether the file has a header or not, columns must be specified.   |
-| columns    | The columns of the table.</br>"type" is optional ("BIGINT", "BOOLEAN", "DOUBLE", default value is "VARCHAR").                          |
+* The first line of the CSV file must be the header.
 
 The connector also supports reading files from a SFTP server.
 
@@ -60,7 +37,8 @@ The connector also supports reading files from a SFTP server.
 connector.name=csv
 csv.protocol=sftp
 csv.base=/path/to/dir
-csv.table-description-dir=/path/to/dir
+csv.splitter=,
+csv.suffix=csv
 csv.host=xxx.xxx.xxx.xxx
 csv.port=xxx
 csv.username=xxx

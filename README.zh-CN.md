@@ -17,42 +17,23 @@ Presto CSV 连接器，支持查询本地或 SFTP 服务器上的 CSV 文件。
 
 ```
 connector.name=csv
-csv.protocol=file
+csv.protocol=sftp
 csv.base=/path/to/dir
-csv.table-description-dir=/path/to/dir
+csv.splitter=,
+csv.suffix=csv
+csv.host=xxx.xxx.xxx.xxx
+csv.port=xxx
+csv.username=xxx
+csv.password=xxx
 ```
 
-`csv.base` 为根目录，schema 名称对应下层目录，table 名称对应 CSV 文件名。
+* `csv.base` 为根目录，schema 名称对应下层目录，table 名称对应文件名。
 
-`csv.table-description-dir` 目录存放 JSON 格式的表结构描述文件.
+* `csv.splitter` 为 CSV 分隔符，默认为 `,`。
 
-```json
-{
-  "schemaName": "ip_port_list",
-  "tableName": "ip_port_list_1.csv",
-  "wildcard": false,
-  "delimiter": ",",
-  "hasHeader": false,
-  "columns": [
-    {
-      "name": "ip"
-    },
-    {
-      "name": "port",
-      "type": "BIGINT"
-    }
-  ]
-}
-```
+* `csv.suffix` 为 CSV 文件后缀，默认为 `csv`。
 
-| 字段         | 描述                                                            |
-|------------|---------------------------------------------------------------|
-| schemaName | 库名（路径）                                                        |
-| tableName  | 表名（文件名）                                                       |
-| wildcard   | 若该选项为 true，tableName 将作为通配符，匹配名称相符、字段相同的所有文件                  |
-| delimiter  | CSV 分隔符（默认为 ","）                                              |
-| hasHeader  | 若该选项为 true，第一行为字段名（不使用，自动跳过）                                  |
-| columns    | 字段描述</br>"type" 可选（"BIGINT"，"BOOLEAN"，"DOUBLE"，默认值 "VARCHAR"） |
+* CSV 文件第一行为字段名。
 
 也可以从 SFTP 服务器读取文件：
 
@@ -60,7 +41,8 @@ csv.table-description-dir=/path/to/dir
 connector.name=csv
 csv.protocol=sftp
 csv.base=/path/to/dir
-csv.table-description-dir=/path/to/dir
+csv.splitter=,
+csv.suffix=csv
 csv.host=xxx.xxx.xxx.xxx
 csv.port=xxx
 csv.username=xxx
