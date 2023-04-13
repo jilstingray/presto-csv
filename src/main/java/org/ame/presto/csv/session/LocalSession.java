@@ -13,7 +13,6 @@
  */
 package org.ame.presto.csv.session;
 
-import com.facebook.presto.spi.SchemaTableName;
 import com.google.common.collect.ImmutableList;
 
 import java.io.File;
@@ -22,7 +21,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public class LocalSession
         implements ISession
@@ -37,58 +35,6 @@ public class LocalSession
         }
     }
 
-    @Override
-    public InputStream getInputStream(String schemaName, String tableName)
-            throws IOException
-    {
-        return new File(base + "/" + schemaName + "/" + tableName).toPath().toUri().toURL().openStream();
-    }
-
-    @Override
-    public List<SchemaTableName> getSchemaTableNames(String schemaName, String tableName, boolean wildcard)
-    {
-        List<SchemaTableName> schemaTableNames = new ArrayList<>();
-        List<String> tables;
-        if (wildcard) {
-            tables = getTables(schemaName, Pattern.compile(tableName));
-        }
-        else {
-            tables = getTables(schemaName, tableName);
-        }
-        for (String table : tables) {
-            schemaTableNames.add(new SchemaTableName(schemaName, table));
-        }
-        return schemaTableNames;
-    }
-
-    @Override
-    public void close()
-    {
-    }
-
-    private List<String> getTables(String schemaName, Pattern tableNamePattern)
-    {
-        List<String> tables = new ArrayList<>();
-        for (File file : listFiles(new File(base).toPath().resolve(schemaName).toFile())) {
-            if (file.isFile() && tableNamePattern.matcher(file.getName()).find()) {
-                tables.add(file.getName());
-            }
-        }
-        return tables;
-    }
-
-    private List<String> getTables(String schemaName, String tableName)
-    {
-        List<String> tables = new ArrayList<>();
-        for (File file : listFiles(new File(base).toPath().resolve(schemaName).toFile())) {
-            if (file.isFile() && tableName.equals(file.getName())) {
-                tables.add(file.getName());
-                break;
-            }
-        }
-        return tables;
-    }
-
     private static List<File> listFiles(File dir)
     {
         if ((dir != null) && dir.isDirectory()) {
@@ -98,5 +44,41 @@ public class LocalSession
             }
         }
         return ImmutableList.of();
+    }
+
+    @Override
+    public InputStream getInputStream(String schemaName, String tableName)
+            throws IOException
+    {
+        return new File(base + "/" + schemaName + "/" + tableName).toPath().toUri().toURL().openStream();
+    }
+
+    @Override
+    public List<String> getSchemas()
+    {
+        List<String> schemas = new ArrayList<>();
+        for (File file : listFiles(new File(base).toPath().toFile())) {
+            if (file.isDirectory()) {
+                schemas.add(file.getName());
+            }
+        }
+        return schemas;
+    }
+
+    @Override
+    public List<String> getTables(String schemaName, String suffix)
+    {
+        List<String> tables = new ArrayList<>();
+        for (File file : listFiles(new File(base).toPath().resolve(schemaName).toFile())) {
+            if (file.isFile() && file.getName().endsWith(suffix)) {
+                tables.add(file.getName());
+            }
+        }
+        return tables;
+    }
+
+    @Override
+    public void close()
+    {
     }
 }

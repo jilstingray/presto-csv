@@ -19,11 +19,12 @@ public class CSVConfig
 {
     private String protocol;
     private String base;
-    private String tableDescriptionDir;
     private String username;
     private String password;
     private String host;
     private Integer port;
+    private String splitter;
+    private String suffix;
 
     public String getProtocol()
     {
@@ -33,11 +34,6 @@ public class CSVConfig
     public String getBase()
     {
         return base;
-    }
-
-    public String getTableDescriptionDir()
-    {
-        return tableDescriptionDir;
     }
 
     public String getUsername()
@@ -60,6 +56,16 @@ public class CSVConfig
         return port;
     }
 
+    public String getSplitter()
+    {
+        return splitter;
+    }
+
+    public String getSuffix()
+    {
+        return suffix;
+    }
+
     @Config("csv.protocol")
     public CSVConfig setProtocol(String protocol)
     {
@@ -71,13 +77,6 @@ public class CSVConfig
     public CSVConfig setBase(String base)
     {
         this.base = base;
-        return this;
-    }
-
-    @Config("csv.table-description-dir")
-    public CSVConfig setTableDescriptionDir(String tableDescriptionDir)
-    {
-        this.tableDescriptionDir = tableDescriptionDir;
         return this;
     }
 
@@ -106,6 +105,20 @@ public class CSVConfig
     public CSVConfig setPort(Integer port)
     {
         this.port = port;
+        return this;
+    }
+
+    @Config("csv.splitter")
+    public CSVConfig setSplitter(String splitter)
+    {
+        this.splitter = splitter;
+        return this;
+    }
+
+    @Config("csv.suffix")
+    public CSVConfig setSuffix(String suffix)
+    {
+        this.suffix = suffix;
         return this;
     }
 }

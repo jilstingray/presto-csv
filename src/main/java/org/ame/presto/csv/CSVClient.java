@@ -14,28 +14,33 @@
 package org.ame.presto.csv;
 
 import com.facebook.airlift.json.JsonCodec;
-import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.airlift.log.Logger;
+import com.facebook.presto.common.type.VarcharType;
 import com.google.common.collect.ImmutableList;
-import org.ame.presto.csv.description.CSVColumnDescription;
-import org.ame.presto.csv.description.CSVTableDescription;
-import org.ame.presto.csv.description.CSVTableDescriptionSupplier;
 import org.ame.presto.csv.session.ISession;
 import org.ame.presto.csv.session.SessionProvider;
 
 import javax.inject.Inject;
 
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
 public class CSVClient
 {
+    private static final String IGNORE_QUOTES = "(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
+    private final Logger logger = Logger.get(CSVClient.class);
     private final CSVConfig config;
-    private Map<SchemaTableName, CSVTableDescription> tableDescriptions;
+    private final String splitter;
+    private final String suffix;
 
     @Inject
     public CSVClient(CSVConfig config, JsonCodec<Map<String, List<CSVTable>>> catalogCodec)
@@ -43,22 +48,73 @@ public class CSVClient
         requireNonNull(config, "config is null");
         requireNonNull(catalogCodec, "catalogCodec is null");
         this.config = config;
-        fetchDescriptions();
+        this.splitter = config.getSplitter() == null ? "," + IGNORE_QUOTES : config.getSplitter() + IGNORE_QUOTES;
+        this.suffix = config.getSuffix() == null ? "csv" : config.getSuffix();
     }
 
-    public String getDelimiter(SchemaTableName schemaTableName)
+    public List<String> getSchemaNames()
     {
-        fetchDescriptions();
-        return tableDescriptions.get(schemaTableName).getDelimiter();
+        try {
+            ISession session = getSession();
+            List<String> schemas = session.getSchemas();
+            session.close();
+            return ImmutableList.copyOf(schemas);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public Boolean getHasHeader(SchemaTableName schemaTableName)
+    public List<String> getTableNames(String schemaName)
     {
-        fetchDescriptions();
-        return tableDescriptions.get(schemaTableName).getHasHeader();
+        requireNonNull(schemaName, "schemaName is null");
+        try {
+            ISession session = getSession();
+            List<String> tables = session.getTables(schemaName, suffix);
+            session.close();
+            return ImmutableList.copyOf(tables);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public Map<String, String> getSessionInfo()
+    public Optional<CSVTable> getTable(String schemaName, String tableName)
+    {
+        ImmutableList.Builder<CSVColumn> columns = ImmutableList.builder();
+        // Assume the first row is always the header
+        String[] header;
+        Set<String> columnNames = new HashSet<>();
+        try {
+            ISession session = getSession();
+            InputStream inputStream = session.getInputStream(schemaName, tableName);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                return Optional.empty();
+            }
+            header = headerLine.split(splitter, -1);
+            reader.close();
+            inputStream.close();
+            session.close();
+        }
+        catch (Exception e) {
+            logger.warn(e, "Error while reading csv file %s", tableName);
+            return Optional.empty();
+        }
+        for (int i = 0; i < header.length; i++) {
+            String columnName = header[i].trim();
+            // when empty or repeated column header, adding a placeholder column name
+            if (columnName.isEmpty() || columnNames.contains(columnName)) {
+                columnName = "column_" + i;
+            }
+            columnNames.add(columnName);
+            columns.add(new CSVColumn(columnName, VarcharType.VARCHAR));
+        }
+        return Optional.of(new CSVTable(tableName, columns.build()));
+    }
+
+    public ISession getSession()
     {
         Map<String, String> sessionInfo = new HashMap<>();
         sessionInfo.put("base", config.getBase());
@@ -67,62 +123,13 @@ public class CSVClient
         sessionInfo.put("port", config.getPort().toString());
         sessionInfo.put("username", config.getUsername());
         sessionInfo.put("password", config.getPassword());
-        return sessionInfo;
+        sessionInfo.put("splitter", splitter);
+        sessionInfo.put("suffix", suffix);
+        return new SessionProvider(sessionInfo).getSession();
     }
 
-    public List<String> getSchemaNames()
+    public String getSplitter()
     {
-        fetchDescriptions();
-        List<String> schemas = new ArrayList<>();
-        for (SchemaTableName schemaTableName : tableDescriptions.keySet()) {
-            if (!schemas.contains(schemaTableName.getSchemaName())) {
-                schemas.add(schemaTableName.getSchemaName());
-            }
-        }
-        return ImmutableList.copyOf(schemas);
-    }
-
-    public List<String> getTableNames(String schemaName)
-    {
-        requireNonNull(schemaName, "schemaName is null");
-        fetchDescriptions();
-        List<String> tables = new ArrayList<>();
-        for (SchemaTableName schemaTableName : tableDescriptions.keySet()) {
-            if (schemaTableName.getSchemaName().equals(schemaName)) {
-                tables.add(schemaTableName.getTableName());
-            }
-        }
-        return ImmutableList.copyOf(tables);
-    }
-
-    public Optional<CSVTable> getTable(String schemaName, String tableName)
-    {
-        requireNonNull(schemaName, "schemaName is null");
-        requireNonNull(tableName, "tableName is null");
-        SchemaTableName schemaTableName = new SchemaTableName(schemaName, tableName);
-        fetchDescriptions();
-        CSVTableDescription tableDescription = tableDescriptions.get(schemaTableName);
-        if (tableDescription == null) {
-            return Optional.empty();
-        }
-        List<CSVColumn> columns = new ArrayList<>();
-        for (CSVColumnDescription column : tableDescription.getColumns()) {
-            columns.add(new CSVColumn(column.getName(), column.getType()));
-        }
-        return Optional.of(new CSVTable(tableName, columns));
-    }
-
-    private void fetchDescriptions()
-    {
-        JsonCodec<CSVTableDescription> codec = JsonCodec.jsonCodec(CSVTableDescription.class);
-        try {
-            ISession session = new SessionProvider(getSessionInfo()).getSession();
-            CSVTableDescriptionSupplier supplier = new CSVTableDescriptionSupplier(config, codec, session);
-            this.tableDescriptions = supplier.get();
-            session.close();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return splitter;
     }
 }
