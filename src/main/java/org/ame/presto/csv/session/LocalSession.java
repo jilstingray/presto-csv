@@ -30,8 +30,8 @@ public class LocalSession
     public LocalSession(Map<String, String> sessionInfo)
     {
         this.base = sessionInfo.get("base");
-        if (base.endsWith("/") || base.endsWith("\\")) {
-            base = base.substring(0, base.length() - 1);
+        if (!base.endsWith("/") || !base.endsWith("\\")) {
+            base += "/";
         }
     }
 
@@ -50,7 +50,7 @@ public class LocalSession
     public InputStream getInputStream(String schemaName, String tableName)
             throws IOException
     {
-        return new File(base + "/" + schemaName + "/" + tableName).toPath().toUri().toURL().openStream();
+        return new File(base + schemaName + "/" + tableName).toPath().toUri().toURL().openStream();
     }
 
     @Override

@@ -35,8 +35,8 @@ public class SFTPSession
             throws Exception
     {
         this.base = sessionInfo.get("base");
-        if (base.endsWith("/") || base.endsWith("\\")) {
-            base = base.substring(0, base.length() - 1);
+        if (!base.endsWith("/") || !base.endsWith("\\")) {
+            base += "/";
         }
         String host = sessionInfo.get("host");
         int port = Integer.parseInt(sessionInfo.get("port"));
@@ -54,7 +54,7 @@ public class SFTPSession
     public InputStream getInputStream(String schemaName, String tableName)
             throws SftpException
     {
-        return channel.get(base + "/" + schemaName + "/" + tableName);
+        return channel.get(base + schemaName + "/" + tableName);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class SFTPSession
             throws SftpException
     {
         List<String> tables = new ArrayList<>();
-        List<ChannelSftp.LsEntry> entries = channel.ls(base + "/" + schemaName);
+        List<ChannelSftp.LsEntry> entries = channel.ls(base + schemaName);
         for (ChannelSftp.LsEntry entry : entries) {
             if (!entry.getAttrs().isDir() && entry.getFilename().endsWith(suffix)) {
                 tables.add(entry.getFilename());
