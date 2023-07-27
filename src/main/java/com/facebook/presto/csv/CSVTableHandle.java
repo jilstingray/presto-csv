@@ -11,35 +11,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv;
+package com.facebook.presto.csv;
 
-import com.facebook.presto.spi.ConnectorTableLayoutHandle;
+import com.facebook.presto.spi.ConnectorTableHandle;
+import com.facebook.presto.spi.SchemaTableName;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
-public class CSVTableLayoutHandle
-        implements ConnectorTableLayoutHandle
+public class CSVTableHandle
+        implements ConnectorTableHandle
 {
-    private final CSVTableHandle table;
+    private final String schemaName;
+    private final String tableName;
+    private final SchemaTableName schemaTableName;
 
     @JsonCreator
-    public CSVTableLayoutHandle(@JsonProperty("table") CSVTableHandle table)
+    public CSVTableHandle(
+            @JsonProperty("schemaName") String schemaName,
+            @JsonProperty("tableName") String tableName)
     {
-        this.table = table;
+        this.schemaName = schemaName;
+        this.tableName = tableName;
+        this.schemaTableName = new SchemaTableName(schemaName, tableName);
     }
 
     @JsonProperty
-    public CSVTableHandle getTableHandle()
+    public String getSchemaName()
     {
-        return table;
+        return schemaName;
+    }
+
+    @JsonProperty
+    public String getTableName()
+    {
+        return tableName;
+    }
+
+    public SchemaTableName getSchemaTableName()
+    {
+        return schemaTableName;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(table);
+        return Objects.hash(schemaName, tableName);
     }
 
     @Override
@@ -52,13 +70,13 @@ public class CSVTableLayoutHandle
             return false;
         }
 
-        CSVTableLayoutHandle that = (CSVTableLayoutHandle) o;
-        return Objects.equals(table, that.table);
+        CSVTableHandle that = (CSVTableHandle) o;
+        return Objects.equals(this.schemaTableName, that.schemaTableName);
     }
 
     @Override
     public String toString()
     {
-        return table.toString();
+        return schemaTableName.toString();
     }
 }

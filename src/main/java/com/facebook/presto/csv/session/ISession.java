@@ -11,12 +11,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv;
+package com.facebook.presto.csv.session;
 
-import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
+import java.io.InputStream;
+import java.util.List;
 
-public enum CSVTransactionHandle
-        implements ConnectorTransactionHandle
+public interface ISession
 {
-    INSTANCE
+    InputStream getInputStream(String schemaName, String tableName)
+            throws Exception;
+
+    List<String> getSchemas()
+            throws Exception;
+
+    List<String> getTables(String schemaName, String suffix)
+            throws Exception;
+
+    void close();
 }

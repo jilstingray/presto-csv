@@ -11,14 +11,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv;
+package com.facebook.presto.csv;
 
 import com.facebook.airlift.json.JsonCodec;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.type.VarcharType;
+import com.facebook.presto.csv.session.ISession;
+import com.facebook.presto.csv.session.SessionProvider;
 import com.google.common.collect.ImmutableList;
-import org.ame.presto.csv.session.ISession;
-import org.ame.presto.csv.session.SessionProvider;
 
 import javax.inject.Inject;
 

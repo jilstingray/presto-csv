@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv.session;
+package com.facebook.presto.csv.session;
 
 import com.google.common.collect.ImmutableList;
 

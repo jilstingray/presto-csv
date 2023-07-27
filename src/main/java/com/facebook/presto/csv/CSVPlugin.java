@@ -11,21 +11,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv.session;
+package com.facebook.presto.csv;
 
-import java.io.InputStream;
-import java.util.List;
+import com.facebook.presto.spi.Plugin;
+import com.facebook.presto.spi.connector.ConnectorFactory;
+import com.google.common.collect.ImmutableList;
 
-public interface ISession
+public class CSVPlugin
+        implements Plugin
 {
-    InputStream getInputStream(String schemaName, String tableName)
-            throws Exception;
-
-    List<String> getSchemas()
-            throws Exception;
-
-    List<String> getTables(String schemaName, String suffix)
-            throws Exception;
-
-    void close();
+    @Override
+    public Iterable<ConnectorFactory> getConnectorFactories()
+    {
+        return ImmutableList.of(new CSVConnectorFactory());
+    }
 }

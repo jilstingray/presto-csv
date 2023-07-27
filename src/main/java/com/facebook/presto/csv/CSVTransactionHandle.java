@@ -11,18 +11,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv;
+package com.facebook.presto.csv;
 
-import com.facebook.presto.spi.Plugin;
-import com.facebook.presto.spi.connector.ConnectorFactory;
-import com.google.common.collect.ImmutableList;
+import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 
-public class CSVPlugin
-        implements Plugin
+public enum CSVTransactionHandle
+        implements ConnectorTransactionHandle
 {
-    @Override
-    public Iterable<ConnectorFactory> getConnectorFactories()
-    {
-        return ImmutableList.of(new CSVConnectorFactory());
-    }
+    INSTANCE
 }

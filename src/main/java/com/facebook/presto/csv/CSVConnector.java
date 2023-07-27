@@ -11,7 +11,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv;
+package com.facebook.presto.csv;
 
 import com.facebook.presto.spi.connector.Connector;
 import com.facebook.presto.spi.connector.ConnectorMetadata;
@@ -21,7 +21,7 @@ import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.facebook.presto.spi.transaction.IsolationLevel;
 import com.google.inject.Inject;
 
-import static org.ame.presto.csv.CSVTransactionHandle.INSTANCE;
+import static com.facebook.presto.csv.CSVTransactionHandle.INSTANCE;
 
 public class CSVConnector
         implements Connector

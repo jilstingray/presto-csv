@@ -11,10 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ame.presto.csv;
+package com.facebook.presto.csv;
 
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.type.Type;
+import com.facebook.presto.csv.session.ISession;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorSplit;
@@ -23,7 +24,6 @@ import com.facebook.presto.spi.RecordSet;
 import com.facebook.presto.spi.connector.ConnectorRecordSetProvider;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import com.google.common.collect.Iterables;
-import org.ame.presto.csv.session.ISession;
 
 import javax.inject.Inject;
 

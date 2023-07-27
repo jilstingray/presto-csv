@@ -9,7 +9,6 @@
         <version>0.283-SNAPSHOT</version>
     </parent>
 
-    <groupId>org.ame.presto</groupId>
     <artifactId>presto-csv</artifactId>
     <description>Presto - CSV Connector</description>
     <packaging>presto-plugin</packaging>
